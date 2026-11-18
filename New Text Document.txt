@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peki's Training Institute | Computer Training School in Abuja</title>
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#fff;color:#2a0033;line-height:1.6;cursor:auto}
+a,button{cursor:pointer}
+.topbar{background:#2a0033;color:#fff;padding:8px 20px;font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center}
+.topbar span{margin:0 8px;transition:0.3s}
+.topbar span:hover{color:#ffcc00;transform:scale(1.1);display:inline-block}
+#user-bar{font-weight:800;color:#ffcc00}
+#user-bar button{background:#ffcc00;color:#2a0033;border:none;padding:4px 10px;border-radius:20px;font-weight:800;cursor:pointer;margin-left:8px}
+.cursor-dot{position:fixed;top:0;left:0;width:12px;height:12px;background:#9b30ff;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 15px #9b30ff;opacity:0;transition:opacity 0.2s,width 0.2s,height 0.2s,background 0.2s}
+.cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:2px solid #6a00b8;border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0;transition:opacity 0.2s,width 0.3s,height 0.3s,border-color 0.3s,background 0.3s}
+.cursor-dot.show,.cursor-ring.show{opacity:1}
+.cursor-ring.hovering{width:60px;height:60px;background:rgba(155,48,255,0.15);border-color:#ffcc00}
+.cursor-dot.hovering{width:20px;height:20px;background:#ffcc00;box-shadow:0 0 20px #ffcc00}
+.cursor-ring.clicking{width:20px;height:20px;background:rgba(255,204,0,0.4)}
+.click-burst{position:fixed;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:9999;animation:burst 0.6s ease-out forwards}
+@keyframes burst{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(8);opacity:0}}
+header{background:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(74,0,128,0.12);border-bottom:3px solid transparent;transition:border 0.3s}
+header:hover{border-bottom:3px solid #9b30ff}
+.logo{font-size:24px;font-weight:900;color:#2a0033;cursor:pointer;line-height:1;transition:0.3s;border:2px solid transparent;padding:6px 10px;border-radius:10px}
+.logo:hover{transform:scale(1.05);color:#6a00b8;border:2px solid #9b30ff;box-shadow:0 0 15px rgba(155,48,255,0.4)}
+.logo span{color:#9b30ff}
+.logo small{display:block;font-size:11px;letter-spacing:2px;color:#666;font-weight:600}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+nav a{color:#2a0033;font-weight:700;font-size:14px;cursor:pointer;padding:8px 11px;border-radius:20px;border:2px solid transparent;transition:all 0.3s}
+nav a:hover{color:#6a00b8;transform:translateY(-3px) scale(1.08);border:2px solid #9b30ff;background:#f8f0ff;box-shadow:0 5px 15px rgba(155,48,255,0.3)}
+nav a.active{color:#fff;background:#6a00b8;border:2px solid #2a0033;box-shadow:0 5px 15px rgba(106,0,184,0.4)}
+.btn{display:inline-block;background:#6a00b8;color:#fff;padding:13px 26px;border-radius:8px;font-weight:800;font-size:15px;border:none;cursor:pointer;transition:0.3s;border:2px solid transparent}
+.btn:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 10px 25px rgba(106,0,184,0.4);background:#9b30ff;border:2px solid #ffcc00}
+.btn:active{transform:scale(0.95)}
+.btn-green{background:#25D366}
+.btn-green:hover{background:#1fb857;box-shadow:0 10px 25px rgba(37,211,102,0.4)}
+.btn-dark{background:#2a0033}
+.btn-outline{background:#fff;color:#2a0033;border:2px solid #2a0033}
+.page{display:none}
+.page.active{display:block}
+.hero{background:linear-gradient(90deg,#2a0033 55%,#6a00b8);color:#fff;padding:60px 20px;display:flex;flex-wrap:wrap;gap:30px;align-items:center;justify-content:center}
+.hero-left{max-width:580px}
+.hero-left .badge{background:#ffcc00;color:#2a0033;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;display:inline-block;margin-bottom:15px}
+.hero-left h1{font-size:44px;line-height:1.15;margin-bottom:15px}
+.hero-left h1 span{color:#e0aaff}
+.hero-left p{font-size:17px;color:#e8d5ff;margin-bottom:25px}
+.hero-right{background:#fff;color:#2a0033;border-radius:16px;padding:25px;width:360px;box-shadow:0 15px 40px rgba(0,0,0,0.25);border:3px solid transparent;transition:0.3s}
+.hero-right:hover{border:3px solid #9b30ff}
+.hero-right h3{font-size:20px;margin-bottom:5px}
+.hero-right p{font-size:14px;color:#666;margin-bottom:15px}
+.hero-right input,.hero-right select{width:100%;padding:12px;margin:7px 0;border:2px solid #ddd;border-radius:8px;font-size:15px;transition:0.3s;cursor:text}
+.hero-right input:hover,.hero-right select:hover{border:2px solid #9b30ff}
+.hero-right input:focus,.hero-right select:focus{border:2px solid #6a00b8;outline:none;box-shadow:0 0 10px rgba(106,0,184,0.2)}
+.hero-right label{font-size:16px;font-weight:900;color:#2a0033;display:block;margin-top:8px;margin-bottom:2px;text-align:left;letter-spacing:0.3px}
+.stats{background:#fff;padding:30px 20px;display:flex;flex-wrap:wrap;justify-content:center;gap:30px;text-align:center;border-bottom:1px solid #eee}
+.stat b{font-size:32px;color:#4a0080;display:block}
+.stat span{color:#666;font-size:14px}
+.section{padding:50px 20px;max-width:1150px;margin:0 auto}
+.section h2{font-size:32px;color:#2a0033;margin-bottom:8px;text-align:center}
+.section .sub{color:#666;text-align:center;max-width:700px;margin:0 auto 30px}
+.courses{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.course{border:2px solid #eee;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 5px 20px rgba(74,0,128,0.08);transition:0.3s}
+.course:hover{transform:translateY(-8px);box-shadow:0 15px 30px rgba(106,0,184,0.2);border:2px solid #9b30ff;cursor:pointer}
+.course-top{padding:18px;color:#fff;font-weight:800}
+.course-top.blue{background:#2a0033}.course-top.orange{background:#9b30ff}.course-top.purple{background:#6a00b8}
+.course-body{padding:20px}
+.course-body h3{font-size:20px;margin-bottom:8px;color:#2a0033}
+.course-body p{font-size:14px;color:#666;margin-bottom:15px}
+.meta{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;margin-bottom:15px}
+.meta span{background:#f8f0ff;padding:6px 10px;border-radius:20px;font-weight:700;color:#4a0080;transition:0.3s;border:1px solid transparent}
+.meta span:hover{background:#6a00b8;color:#fff;transform:scale(1.1);border:1px solid #ffcc00;cursor:pointer}
+.price{font-size:24px;font-weight:900;color:#4a0080;margin-bottom:12px}
+.price small{font-size:13px;color:#888;font-weight:400}
+.why{background:#f8f0ff}
+.why-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.why-card{background:#fff;padding:25px;border-radius:14px;text-align:center;box-shadow:0 5px 15px rgba(74,0,128,0.08);transition:0.3s;border:2px solid transparent}
+.why-card:hover{transform:translateY(-5px) scale(1.03);border:2px solid #9b30ff;cursor:pointer}
+.why-card .icon{font-size:40px;margin-bottom:10px}
+.why-card h3{color:#2a0033;margin-bottom:8px}
+.why-card p{font-size:14px;color:#666}
+.ai{background:#2a0033;color:#fff;border-radius:20px;padding:35px 25px;display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
+.ai-card{background:#fff;color:#2a0033;padding:20px;border-radius:12px;width:250px;text-align:center;transition:0.3s;border:2px solid transparent}
+.ai-card:hover{transform:scale(1.05);border:2px solid #ffcc00;cursor:pointer}
+.ai-card h4{margin-bottom:6px}
+.ai-card p{font-size:13px;color:#666}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.testi{background:#fff;border:2px solid #eee;padding:22px;border-radius:14px;transition:0.3s}
+.testi:hover{transform:scale(1.02);border:2px solid #9b30ff;cursor:pointer}
+.testi p{font-size:14px;color:#444;margin-bottom:12px}
+.testi b{color:#2a0033}
+.testi small{color:#9b30ff}
+.about-box{background:#f8f0ff;padding:22px;border-radius:14px;margin:15px 0;text-align:left}
+.owner{background:#2a0033;color:#fff;padding:45px 20px;text-align:center}
+.contact-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:20px}
+.contact-card{background:#fff;border:2px solid #eee;padding:25px;width:270px;border-radius:14px;text-align:center;transition:0.3s}
+.contact-card:hover{transform:translateY(-5px);border:2px solid #9b30ff;cursor:pointer}
+.contact-card .icon{font-size:40px}
+.contact-card a{display:block;padding:12px;border-radius:8px;font-weight:800;color:#fff;margin-top:10px}
+.payment-box{background:#fff;border:2px solid #4a0080;padding:25px;border-radius:16px;margin:20px auto;max-width:520px;text-align:center}
+.payment-box input,.payment-box select{width:100%;padding:13px;margin:8px 0;border:2px solid #ddd;border-radius:8px;font-size:15px;transition:0.3s}
+.payment-box input:hover,.payment-box select:hover{border:2px solid #9b30ff}
+.auth-box{background:#fff;border:2px solid #4a0080;padding:30px;border-radius:16px;margin:20px auto;max-width:460px;text-align:center;box-shadow:0 10px 30px rgba(74,0,128,0.12)}
+.auth-box input{width:100%;padding:13px;margin:8px 0;border:2px solid #ddd;border-radius:8px;font-size:15px}
+.auth-box input:focus{border:2px solid #6a00b8;outline:none}
+.auth-tabs{display:flex;gap:10px;margin-bottom:15px}
+.auth-tabs button{flex:1;padding:12px;border-radius:8px;border:2px solid #6a00b8;background:#fff;color:#6a00b8;font-weight:800;cursor:pointer}
+.auth-tabs button.active{background:#6a00b8;color:#fff}
+.auth-msg{font-size:14px;font-weight:700;min-height:20px;margin:8px 0}
+.auth-msg.ok{color:green}.auth-msg.bad{color:red}
+.mc-badge{display:inline-flex;align-items:center;gap:8px;background:#000;color:#fff;padding:6px 14px;border-radius:20px;font-weight:900;font-size:14px}
+.mc-c1{width:18px;height:18px;background:#EB001B;border-radius:50%;display:inline-block}
+.mc-c2{width:18px;height:18px;background:#F79E1B;border-radius:50%;display:inline-block;margin-left:-8px}
+.card-type{font-size:13px;font-weight:700;min-height:18px}
+.card-type.ok{color:green}.card-type.bad{color:red}
+.auto-box{background:#f8f0ff;padding:14px;border-radius:10px;text-align:left;margin:8px 0;display:none;font-size:14px}
+.confirm-box{background:#e8ffe8;border:2px solid #25D366;padding:14px;border-radius:10px;text-align:left;margin:10px 0;display:none;font-size:14px}
+.back-btn{display:inline-block;background:#2a0033;color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;margin:20px 5px;border:none;cursor:pointer}
+footer{background:#2a0033;color:#fff;padding:35px 20px;text-align:center}
+footer a{color:#e0aaff;cursor:pointer;margin:0 6px;transition:0.3s;display:inline-block;border:2px solid transparent;padding:4px 8px;border-radius:8px}
+footer a:hover{color:#ffcc00;transform:scale(1.15) translateY(-2px);border:2px solid #ffcc00}
+@media(max-width:700px){.hero-left h1{font-size:32px}header{flex-direction:column;gap:10px}.topbar{justify-content:center}.cursor-dot,.cursor-ring{display:none}}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div class="topbar"><span>📍 Abuja, Nigeria</span><span>📞 +234 808 553 7129</span><span id="user-bar">👤 <a onclick="showPage('auth')" style="color:#ffcc00;cursor:pointer">Sign Up / Login</a></span></div>
+
+<header>
+  <div class="logo" onclick="showPage('home')">PEKI'S <span>TRAINING</span><small>INSTITUTE • ABUJA</small></div>
+  <nav>
+    <a id="link-home" class="active" onclick="showPage('home')">Home</a>
+    <a id="link-courses" onclick="showPage('courses')">Courses</a>
+    <a id="link-why" onclick="showPage('why')">Why Us</a>
+    <a id="link-about" onclick="showPage('about')">About</a>
+    <a id="link-contact" onclick="showPage('contact')">Contact</a>
+    <a id="link-payment" onclick="showPage('payment')">Pay</a>
+    <a id="link-auth" onclick="showPage('auth')">Account</a>
+  </nav>
+  <button class="btn" onclick="showPage('courses')">Enrol Now →</button>
+</header>
+
+<div id="page-home" class="page active">
+  <section class="hero">
+    <div class="hero-left">
+      <span class="badge">● ADMISSION OPEN - ENROL TODAY</span>
+      <h1>In-class computer education with <span>physical instructors</span></h1>
+      <p>Peki's Training Institute is an accredited computer training institution in Abuja. We offer physical, hands-on training for tech and coding courses. Learn by doing, with real projects and a certificate.</p>
+      <button class="btn" onclick="showPage('courses')">Browse Courses →</button>
+      <button class="btn btn-outline" style="background:#fff;margin-left:8px" onclick="showPage('payment')">How To Pay</button>
+      <br><br>
+      <button class="btn btn-green" onclick="showPage('auth')">Create Free Account →</button>
+      <p style="font-size:14px;margin-top:12px">⭐ Trusted by students • 💻 Hands-on • 🎓 Certificate</p>
+    </div>
+    <div class="hero-right">
+      <h3>Start Your Tech Journey</h3>
+      <p>Fill this form - we will reply on WhatsApp</p>
+      <input type="text" id="lead-name" placeholder="Your Full Name">
+      <input type="text" id="lead-phone" placeholder="WhatsApp Number">
+      <label>What would you like to study?</label>
+      <select id="lead-course">
+        <option value="" disabled selected>What would you like to study?</option>
+        <option>Website Building - ₦200,000</option>
+        <option>Website Fixing / Redesign - ₦70,000</option>
+        <option>Website Design Upgrade - ₦120,000</option>
+      </select>
+      <button class="btn" style="width:100%" onclick="sendLead()">Get Course Details →</button>
+      <p style="text-align:center;margin-top:10px">Or <a href="https://wa.me/2348085537129" style="color:#6a00b8;font-weight:800">Chat on WhatsApp</a></p>
+    </div>
+  </section>
+  <div class="stats">
+    <div class="stat"><b>6+</b><span>Years of Excellence</span></div>
+    <div class="stat"><b>1000+</b><span>Students Trained</span></div>
+    <div class="stat"><b>95%</b><span>Success Rate</span></div>
+    <div class="stat"><b>100%</b><span>Hands-on Training</span></div>
+  </div>
+  <div class="section">
+    <h2>What Our Students Say</h2>
+    <div class="testi-grid">
+      <div class="testi"><p>"The training exceeded my expectations. It covered all I need to know starting from the basics. Now I can build websites on my own."</p><b>Student - Website Building</b><br><small>★★★★★ 5.0</small></div>
+      <div class="testi"><p>"My website fixing training is going smoothly. The instructor explains well and I learn by doing real projects."</p><b>Student - Website Fixing</b><br><small>★★★★★ 5.0</small></div>
+      <div class="testi"><p>"Peki's Training Institute is top-notch. I now design websites for clients and earn money from my skill."</p><b>Student - Design Upgrade</b><br><small>★★★★★ 5.0</small></div>
+    </div>
+    <div style="text-align:center;margin-top:25px"><button class="btn" onclick="showPage('courses')">View Courses →</button> <button class="btn btn-green" onclick="shareSite()">Share This Website</button></div>
+  </div>
+  <div class="owner"><h2>Abdulrazaq Yakubu Aliu</h2><p>Founder & CEO - Peki's Training Institute | Web Builder & Fixer</p><br><p>Phone: +234 808 553 7129 | Email: abdulrazaqyakubu62@gmail.com</p><br><button class="btn" onclick="showPage('contact')">Contact Me</button></div>
+</div>
+
+<div id="page-courses" class="page">
+  <div class="section">
+    <h2>Popular Courses</h2>
+    <p class="sub">Learn in-demand skills with a physical instructor. Choose your course and start today.</p>
+    <div class="courses">
+      <!-- COURSE 1 -->
+      <div class="course"><div class="course-top blue">WEB • BEGINNER TO PRO • PTI-WEB-101</div><div class="course-body"><h3>Website Building</h3><p>Build modern, beautiful and standard websites for businesses, schools, shops and personal brands. HTML, CSS, WordPress + AI.</p><div class="meta"><span>📅 6 Weeks</span><span>⏱ 3 Days / Week</span><span>🎓 Certificate</span><span>On-Site</span></div><div class="price">₦200,000 <small>/ Full Course</small></div><button class="btn" style="width:100%" onclick="payFor('Website Building - N200,000')">Enrol - Pay ₦200,000</button><br><br><button class="btn btn-green" style="width:100%" onclick="askWhatsApp('web101')">Ask on WhatsApp - Full Info 💬</button></div></div>
+      <!-- COURSE 2 -->
+      <div class="course"><div class="course-top orange">WEB • FIX & REDESIGN • PTI-WEB-102</div><div class="course-body"><h3>Website Fixing / Redesign</h3><p>Is your website old or not working well? Learn to fix, make it faster, more interesting, more standard and more beautiful.</p><div class="meta"><span>📅 4 Weeks</span><span>⏱ 3 Days / Week</span><span>🎓 Certificate</span><span>On-Site</span></div><div class="price">₦70,000 <small>/ Full Course</small></div><button class="btn" style="width:100%" onclick="payFor('Website Fixing / Redesign - N70,000')">Enrol - Pay ₦70,000</button><br><br><button class="btn btn-green" style="width:100%" onclick="askWhatsApp('web102')">Ask on WhatsApp - Full Info 💬</button></div></div>
+      <!-- COURSE 3 -->
+      <div class="course"><div class="course-top purple">DESIGN • UI / UX • PTI-DES-103</div><div class="course-body"><h3>Website Design Upgrade</h3><p>Make websites more interesting with better colours, images, layout and buttons that make customers love it and buy.</p><div class="meta"><span>📅 5 Weeks</span><span>⏱ 3 Days / Week</span><span>🎓 Certificate</span><span>On-Site</span></div><div class="price">₦120,000 <small>/ Full Course</small></div><button class="btn" style="width:100%" onclick="payFor('Website Design Upgrade - N120,000')">Enrol - Pay ₦120,000</button><br><br><button class="btn btn-green" style="width:100%" onclick="askWhatsApp('des103')">Ask on WhatsApp - Full Info 💬</button></div></div>
+    </div>
+    <div style="text-align:center;margin-top:30px"><h3>Payment Method</h3><p>🏦 Kuda Bank • 📱 Opay • Mastercard Only</p><br><button class="btn btn-dark" onclick="showPage('payment')">Go To Payment Page ➜</button></div>
+  </div>
+  <div style="text-align:center"><button class="back-btn" onclick="showPage('home')">← Back to Home</button></div>
+</div>
+
+<div id="page-why" class="page">
+  <div class="section why">
+    <h2>Why Learn With Peki's?</h2>
+    <p class="sub">We focus on real skills, not just theory.</p>
+    <div class="why-grid">
+      <div class="why-card"><div class="icon">👨‍🏫</div><h3>Physical Instructor</h3><p>Learn face-to-face with a real instructor, not just videos. Ask questions and get help instantly.</p></div>
+      <div class="why-card"><div class="icon">💻</div><h3>Hands-on Projects</h3><p>You build real websites from Day 1. Graduate with a portfolio, not just notes.</p></div>
+      <div class="why-card"><div class="icon">🎓</div><h3>Certificate</h3><p>Get a certificate after training to show employers and clients you are skilled.</p></div>
+      <div class="why-card"><div class="icon">💼</div><h3>Job & Freelance Ready</h3><p>Learn how to get clients, charge for websites and start earning.</p></div>
+    </div>
+    <div style="margin-top:30px">
+      <h2 style="font-size:24px">Learn AI With Web Development</h2>
+      <p class="sub">Our courses now include AI - work faster and smarter like professionals.</p>
+      <div class="ai">
+        <div class="ai-card"><h4>🤖 AI + Web Design</h4><p>Use AI to design faster, write content and build websites in half the time.</p></div>
+        <div class="ai-card"><h4>🌐 WordPress + AI</h4><p>Build WordPress sites with AI tools - Elementor, Divi AI and more.</p></div>
+        <div class="ai-card"><h4>🎨 AI + UI/UX</h4><p>Design beautiful interfaces with AI assistance and Figma.</p></div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:30px"><button class="btn" onclick="showPage('courses')">Browse Courses →</button></div>
+  </div>
+  <div style="text-align:center"><button class="back-btn" onclick="showPage('home')">← Back to Home</button></div>
+</div>
+
+<div id="page-about" class="page">
+  <div class="section">
+    <h2>About Peki's Training Institute</h2>
+    <p class="sub">Bridging the tech skill gap in Abuja</p>
+    <div style="text-align:center;font-size:70px">👨‍💼</div>
+    <h2 style="font-size:24px">Abdulrazaq Yakubu Aliu</h2>
+    <p style="text-align:center;color:#6a00b8;font-weight:800">Founder & CEO - Peki's Training Institute</p><br>
+    <p style="text-align:center;max-width:700px;margin:0 auto">Hello! My name is <b>Abdulrazaq Yakubu Aliu</b>, founder of Peki's Training Institute. I build and fix websites to make them more interesting and standard.</p>
+    <div class="about-box"><h3>I Build and Fix Websites</h3><p>I create websites that look modern, work well on phone and computer, load fast, and bring more customers to you.</p><p style="margin-top:10px">✅ Modern and beautiful<br>✅ Works on phone and computer<br>✅ Fast and easy to use<br>✅ Makes your business look standard</p></div>
+    <div class="about-box"><h3>I Run Peki's Training Institute</h3><p>Peki's Training Institute is your one-stop hub for quality training and excellent service. We believe in honesty, affordability and student happiness.</p></div>
+    <div class="about-box"><h3>My Promise</h3><p>"If you are not happy with what you learnt, we will make it right. That is why students trust us."</p></div>
+    <div style="text-align:center"><button class="btn" onclick="showPage('courses')">See Courses</button> <button class="btn btn-green" onclick="showPage('contact')">Contact Me</button></div>
+  </div>
+  <div style="text-align:center"><button class="back-btn" onclick="showPage('home')">← Back to Home</button></div>
+</div>
+
+<div id="page-contact" class="page">
+  <div class="section">
+    <h2>Contact Peki's Training Institute</h2>
+    <p class="sub">Choose your preferred way to reach us. We reply quickly.</p>
+    <div class="contact-grid">
+      <div class="contact-card"><div class="icon">💬</div><h3>WhatsApp</h3><p>+234 808 553 7129</p><a href="https://wa.me/2348085537129" style="background:#25D366">Chat on WhatsApp</a></div>
+      <div class="contact-card"><div class="icon">📸</div><h3>Instagram</h3><p>@pekishub</p><a href="https://instagram.com/pekishub" target="_blank" style="background:#9b30ff">Follow on Instagram</a></div>
+      <div class="contact-card"><div class="icon">🎵</div><h3>TikTok</h3><p>@pekishub</p><a href="https://tiktok.com/@pekishub" target="_blank" style="background:#2a0033">Follow on TikTok</a></div>
+      <div class="contact-card"><div class="icon">✉️</div><h3>Gmail</h3><p>abdulrazaqyakubu62@gmail.com</p><a href="mailto:abdulrazaqyakubu62@gmail.com" style="background:#6a00b8">Send Email</a></div>
+    </div>
+  </div>
+  <div style="text-align:center"><button class="back-btn" onclick="showPage('home')">← Back to Home</button></div>
+</div>
+
+<div id="page-payment" class="page">
+  <div class="section">
+    <h2>How To Pay</h2>
+    <p class="sub" id="pay-title">Pay easily with Bank Transfer, Opay or Mastercard. Send your receipt on WhatsApp after payment.</p>
+    <div class="payment-box"><div style="font-size:50px">🏦</div><h3>Bank Transfer - Kuda Bank</h3><p><b>Account Number:</b> 2052204102</p><p><b>Account Name:</b> Abdulrazaq Yakubu Aliu</p><p><b>Bank:</b> Kuda Bank</p><br><button class="btn btn-green" onclick="copyKuda()">Copy Account Number</button></div>
+    <div class="payment-box"><div style="font-size:50px">📱</div><h3>Opay</h3><p><b>Opay Number:</b> 0913 371 7060</p><p><b>Account Name:</b> Abdulrazaq Yakubu Aliu</p><br><button class="btn btn-green" onclick="copyOpay()">Copy Opay Number</button></div>
+    <div class="payment-box">
+      <div class="mc-badge"><span class="mc-c1"></span><span class="mc-c2"></span> Mastercard</div>
+      <h3>Pay With Mastercard Only</h3>
+      <p style="font-size:14px;color:#666">Step 1: Type card number - we auto-detect bank. Step 2: Type name as on card to confirm. Step 3: Pay securely with Paystack.</p>
+      <select id="card-service"><option value="200000">Website Building - ₦200,000</option><option value="70000">Website Fixing / Redesign - ₦70,000</option><option value="120000">Website Design Upgrade - ₦120,000</option></select>
+      <input type="text" id="cust-email" placeholder="Your Email - for receipt">
+      <input type="text" id="card-number" placeholder="Mastercard Number - 16 digits" maxlength="19" oninput="formatCard(this)">
+      <div id="card-type-msg" class="card-type"></div>
+      <div id="auto-box" class="auto-box"><p>💳 <b>Card Type:</b> Mastercard</p><p>🏦 <b>Bank Name:</b> <span id="auto-bank">Detecting...</span></p><p>🔢 <b>Card:</b> <span id="auto-num">----</span></p></div>
+      <input type="text" id="confirm-name" placeholder="Type Name As On Card - To Confirm">
+      <div id="confirm-box" class="confirm-box"><p>✅ <b>Confirm:</b></p><p>Name: <b id="confirm-name-show"></b></p><p>Card: <b id="confirm-card-show"></b></p><p>Bank: <b id="confirm-bank-show"></b></p></div>
+      <button class="btn btn-green" style="width:100%" onclick="confirmDetails()">Confirm My Name & Card ✓</button>
+      <button class="btn" style="width:100%" onclick="payWithPaystack()">Pay With Mastercard - Secure via Paystack</button>
+      <p style="font-size:12px;color:#888">🔒 Secure - Powered by Paystack. We do NOT collect your CVV or PIN.</p>
+    </div>
+    <div style="text-align:center"><a class="btn btn-green" href="https://wa.me/2348085537129?text=I%20have%20made%20payment%20to%20Peki's%20Training%20Institute">I Have Paid - Send Receipt</a></div>
+  </div>
+  <div style="text-align:center"><button class="back-btn" onclick="showPage('home')">← Back to Home</button></div>
+</div>
+
+<div id="page-auth" class="page">
+  <div class="section">
+    <h2>My Account</h2>
+    <p class="sub">Create a free account to enrol faster, or login to your account. Saved in Firebase for all visitors.</p>
+    <div id="logged-in-box" class="auth-box" style="display:none">
+      <div style="font-size:50px">👤</div>
+      <h3 id="welcome-name">Welcome!</h3>
+      <p id="welcome-email" style="color:#666"></p>
+      <p style="margin:12px 0">You are logged in. You can now enrol for courses and pay faster.</p>
+      <button class="btn" style="width:100%" onclick="showPage('courses')">Browse Courses →</button><br><br>
+      <button class="btn btn-dark" style="width:100%" onclick="logoutUser()">Logout</button>
+    </div>
+    <div id="auth-forms" class="auth-box">
+      <div class="auth-tabs">
+        <button id="tab-signup" class="active" onclick="switchAuth('signup')">Sign Up</button>
+        <button id="tab-login" onclick="switchAuth('login')">Login</button>
+      </div>
+      <div id="form-signup">
+        <h3>Create Free Account</h3>
+        <p style="font-size:13px;color:#666">Join Peki's Training Institute - Saved in Firebase</p>
+        <input type="text" id="su-name" placeholder="Full Name">
+        <input type="text" id="su-phone" placeholder="WhatsApp Number">
+        <input type="email" id="su-email" placeholder="Email Address">
+        <input type="password" id="su-pass" placeholder="Create Password (min 6 characters)">
+        <input type="password" id="su-pass2" placeholder="Confirm Password">
+        <div id="su-msg" class="auth-msg"></div>
+        <button class="btn" style="width:100%" onclick="doSignup()">Create Account →</button>
+      </div>
+      <div id="form-login" style="display:none">
+        <h3>Welcome Back!</h3>
+        <p style="font-size:13px;color:#666">Login to your account</p>
+        <input type="email" id="li-email" placeholder="Email Address">
+        <input type="password" id="li-pass" placeholder="Password">
+        <div id="li-msg" class="auth-msg"></div>
+        <button class="btn" style="width:100%" onclick="doLogin()">Login →</button>
+        <p style="font-size:13px;margin-top:12px">No account yet? <a onclick="switchAuth('signup')" style="color:#6a00b8;font-weight:800;cursor:pointer">Sign Up free</a></p>
+        <p style="font-size:13px"><a onclick="forgotPassword()" style="color:#6a00b8;font-weight:800;cursor:pointer">Forgot Password?</a></p>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center"><button class="back-btn" onclick="showPage('home')">← Back to Home</button></div>
+</div>
+
+<footer>
+  <p>© 2026 Peki's Training Institute | Abdulrazaq Yakubu Aliu. All rights reserved.</p>
+  <p style="margin-top:10px"><a onclick="showPage('home')">Home</a> • <a onclick="showPage('courses')">Courses</a> • <a onclick="showPage('why')">Why Us</a> • <a onclick="showPage('about')">About</a> • <a onclick="showPage('contact')">Contact</a> • <a onclick="showPage('payment')">Pay</a> • <a onclick="showPage('auth')">Account</a></p>
+  <p style="margin-top:10px">Phone: +234 808 553 7129 | Email: abdulrazaqyakubu62@gmail.com</p>
+</footer>
+
+<script>
+var SITE_URL = "https://pekishub.netlify.app";
+var PAYSTACK_KEY = "pk_test_xxxxxxxxxxxxxxxx";
+var firebaseConfig = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+var auth=null, db=null, currentUserData=null;
+try{
+  if(firebaseConfig.apiKey.indexOf("PASTE")!==-1){ console.warn("Firebase not configured yet"); }
+  else { firebase.initializeApp(firebaseConfig); auth=firebase.auth(); db=firebase.firestore(); }
+}catch(e){ console.log("Firebase init error", e); }
+var dot=document.getElementById('cursorDot');
+var ring=document.getElementById('cursorRing');
+var mouseX=0,mouseY=0,ringX=0,ringY=0;
+function getBorderTargets(){ return document.querySelectorAll('nav a, .logo, header .btn, .btn, a, .course, .why-card, .ai-card, .testi, .contact-card, .hero-right, input, select'); }
+function isNearBorder(x,y,el){
+  var r=el.getBoundingClientRect();
+  var edge=14;
+  var inside = x>=r.left-edge && x<=r.right+edge && y>=r.top-edge && y<=r.bottom+edge;
+  if(!inside) return false;
+  return Math.abs(x-r.left)<edge || Math.abs(x-r.right)<edge || Math.abs(y-r.top)<edge || Math.abs(y-r.bottom)<edge || (x>=r.left && x<=r.right && y>=r.top && y<=r.bottom && (x-r.left<edge || r.right-x<edge || y-r.top<edge || r.bottom-y<edge));
+}
+document.addEventListener('mousemove',function(e){
+  mouseX=e.clientX; mouseY=e.clientY;
+  dot.style.left=mouseX+'px'; dot.style.top=mouseY+'px';
+  var near=false;
+  var els=getBorderTargets();
+  for(var i=0;i<els.length;i++){ if(isNearBorder(mouseX,mouseY,els[i])){ near=true; break; } }
+  if(near){ dot.classList.add('show'); ring.classList.add('show'); dot.classList.add('hovering'); ring.classList.add('hovering'); }
+  else { dot.classList.remove('show'); ring.classList.remove('show'); dot.classList.remove('hovering'); ring.classList.remove('hovering'); }
+});
+function animateRing(){ ringX += (mouseX - ringX)*0.18; ringY += (mouseY - ringY)*0.18; ring.style.left=ringX+'px'; ring.style.top=ringY+'px'; requestAnimationFrame(animateRing); }
+animateRing();
+document.addEventListener('mousedown',function(e){
+  var els=getBorderTargets(); var onBorder=false;
+  for(var i=0;i<els.length;i++){ if(isNearBorder(e.clientX,e.clientY,els[i])){ onBorder=true; break; } }
+  if(!onBorder) return;
+  ring.classList.add('clicking');
+  var burst=document.createElement('div'); burst.className='click-burst'; burst.style.left=e.clientX+'px'; burst.style.top=e.clientY+'px'; burst.style.background='#ffcc00'; burst.style.boxShadow='0 0 20px #ffcc00'; document.body.appendChild(burst); setTimeout(function(){burst.remove();},600);
+});
+document.addEventListener('mouseup',function(){ ring.classList.remove('clicking'); });
+function showPage(page){
+  var pages=['home','courses','why','about','contact','payment','auth'];
+  pages.forEach(function(p){ document.getElementById('page-'+p).classList.remove('active'); });
+  pages.forEach(function(p){ var el=document.getElementById('link-'+p); if(el) el.classList.remove('active'); });
+  document.getElementById('page-'+page).classList.add('active');
+  var le=document.getElementById('link-'+page); if(le) le.classList.add('active');
+  window.scrollTo(0,0);
+}
+// ===== ASK ON WHATSAPP - FULL COURSE INFO =====
+function askWhatsApp(course){
+  var msg="";
+  if(course==='web101'){
+    msg="Hello Peki's Training Institute! 👋\n\nI want FULL INFORMATION about:\n\n📌 COURSE: Website Building\n📌 CODE: WEB • BEGINNER TO PRO • PTI-WEB-101\n📌 FEE: ₦200,000 (Full Course)\n📌 DURATION: 6 Weeks\n📌 CLASS: 3 Days / Week, 2 Hours per session\n📌 FORMAT: On-Site / Physical in Abuja\n📌 CERTIFICATE: Yes\n\n📚 WHAT IS THIS COURSE ABOUT?\nThis course teaches you how to BUILD a complete website from scratch, even if you have never coded before.\n\nYou will learn:\n✅ What a website is and how it works\n✅ HTML - structure of a website\n✅ CSS - colours, layout, beautiful design\n✅ WordPress - build websites without stress\n✅ AI Tools - build faster with AI\n✅ How to build websites for businesses, schools, shops, churches & personal brands\n✅ How to put your website online (domain + hosting)\n✅ How to get clients and charge for websites\n\n🎯 WHO IS IT FOR?\nBeginners, students, business owners, anyone who wants to learn website building and start earning.\n\nPlease send me full details, class days & how to enrol. Thank you!";
+  }
+  if(course==='web102'){
+    msg="Hello Peki's Training Institute! 👋\n\nI want FULL INFORMATION about:\n\n📌 COURSE: Website Fixing / Redesign\n📌 CODE: WEB • FIX & REDESIGN • PTI-WEB-102\n📌 FEE: ₦70,000 (Full Course)\n📌 DURATION: 4 Weeks\n📌 CLASS: 3 Days / Week, 2 Hours per session\n📌 FORMAT: On-Site / Physical in Abuja\n📌 CERTIFICATE: Yes\n\n📚 WHAT IS THIS COURSE ABOUT?\nThis course teaches you how to FIX, REPAIR and REDESIGN old, slow or broken websites and turn them into modern, fast, beautiful websites.\n\nYou will learn:\n✅ How to check what is wrong with a website\n✅ How to fix broken links, images, layout & errors\n✅ How to make a slow website fast\n✅ How to make a website work well on phone & computer\n✅ How to redesign an old website to look modern & standard\n✅ How to improve colours, text, images & buttons\n✅ WordPress fixing & redesign\n✅ How to charge clients for fixing / redesign jobs\n\n🎯 WHO IS IT FOR?\nAnyone who already has small website knowledge, or business owners whose website is old / not working well.\n\nPlease send me full details, class days & how to enrol. Thank you!";
+  }
+  if(course==='des103'){
+    msg="Hello Peki's Training Institute! 👋\n\nI want FULL INFORMATION about:\n\n📌 COURSE: Website Design Upgrade\n📌 CODE: DESIGN • UI / UX • PTI-DES-103\n📌 FEE: ₦120,000 (Full Course)\n📌 DURATION: 5 Weeks\n📌 CLASS: 3 Days / Week, 2 Hours per session\n📌 FORMAT: On-Site / Physical in Abuja\n📌 CERTIFICATE: Yes\n\n📚 WHAT IS THIS COURSE ABOUT?\nThis course teaches you how to make websites MORE BEAUTIFUL, MORE INTERESTING and MORE PROFESSIONAL so customers love it and buy.\n\nYou will learn:\n✅ Colours - which colours make a website look standard\n✅ Layout - how to arrange text, images & buttons well\n✅ Typography - beautiful fonts that are easy to read\n✅ Images & Icons - how to choose good images\n✅ UI / UX Design - design that makes visitors stay & buy\n✅ Figma + AI Design Tools\n✅ How to upgrade an old design to a modern design\n✅ How to design homepages, shop pages, school pages & landing pages\n\n🎯 WHO IS IT FOR?\nDesigners, website builders, business owners, and anyone who wants their website to look more interesting & professional.\n\nPlease send me full details, class days & how to enrol. Thank you!";
+  }
+  if(db && auth && auth.currentUser){
+    db.collection('leads').add({ course:course, type:'whatsapp_info', email:auth.currentUser.email, uid:auth.currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(function(){});
+  }
+  window.open("https://wa.me/2348085537129?text="+encodeURIComponent(msg),"_blank");
+}
+function switchAuth(mode){
+  document.getElementById('tab-signup').classList.toggle('active', mode==='signup');
+  document.getElementById('tab-login').classList.toggle('active', mode==='login');
+  document.getElementById('form-signup').style.display = mode==='signup' ? 'block' : 'none';
+  document.getElementById('form-login').style.display = mode==='login' ? 'block' : 'none';
+}
+function updateAuthUIForUser(user, data){
+  var loggedBox=document.getElementById('logged-in-box');
+  var forms=document.getElementById('auth-forms');
+  var bar=document.getElementById('user-bar');
+  if(user){
+    var name = data && data.name ? data.name : (user.displayName || user.email.split('@')[0]);
+    var phone = data && data.phone ? data.phone : '';
+    currentUserData={name:name, phone:phone, email:user.email};
+    loggedBox.style.display='block'; forms.style.display='none';
+    document.getElementById('welcome-name').textContent='Welcome, '+name+'! 🎉';
+    document.getElementById('welcome-email').textContent=user.email+' • '+phone;
+    bar.innerHTML='👋 Hi, '+name.split(' ')[0]+' <button onclick="logoutUser()">Logout</button>';
+    if(document.getElementById('lead-name')) document.getElementById('lead-name').value=name;
+    if(document.getElementById('lead-phone')) document.getElementById('lead-phone').value=phone;
+    if(document.getElementById('cust-email')) document.getElementById('cust-email').value=user.email;
+    if(document.getElementById('confirm-name')) document.getElementById('confirm-name').value=name;
+  } else {
+    currentUserData=null;
+    loggedBox.style.display='none'; forms.style.display='block';
+    bar.innerHTML='👤 <a onclick="showPage(\'auth\')" style="color:#ffcc00;cursor:pointer">Sign Up / Login</a>';
+  }
+}
+if(auth){
+  auth.onAuthStateChanged(function(user){
+    if(user && db){
+      db.collection('users').doc(user.uid).get().then(function(doc){ updateAuthUIForUser(user, doc.exists ? doc.data() : null); }).catch(function(){ updateAuthUIForUser(user, null); });
+    } else { updateAuthUIForUser(null, null); }
+  });
+}
+function doSignup(){
+  var name=document.getElementById('su-name').value.trim();
+  var phone=document.getElementById('su-phone').value.trim();
+  var email=document.getElementById('su-email').value.trim().toLowerCase();
+  var pass=document.getElementById('su-pass').value;
+  var pass2=document.getElementById('su-pass2').value;
+  var msg=document.getElementById('su-msg');
+  if(!auth){ msg.textContent='❌ Owner: Paste Firebase Config first'; msg.className='auth-msg bad'; return; }
+  if(!name||!phone||!email||!pass){ msg.textContent='❌ Please fill all fields'; msg.className='auth-msg bad'; return; }
+  if(email.indexOf('@')===-1){ msg.textContent='❌ Enter valid email'; msg.className='auth-msg bad'; return; }
+  if(pass.length<6){ msg.textContent='❌ Password must be at least 6 characters'; msg.className='auth-msg bad'; return; }
+  if(pass!==pass2){ msg.textContent='❌ Passwords do not match'; msg.className='auth-msg bad'; return; }
+  msg.textContent='⏳ Creating account...'; msg.className='auth-msg';
+  auth.createUserWithEmailAndPassword(email, pass).then(function(cred){
+    var uid=cred.user.uid;
+    return db.collection('users').doc(uid).set({ name:name, phone:phone, email:email, uid:uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(function(){ return db.collection('leads').add({ name:name, phone:phone, email:email, type:'signup', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); });
+  }).then(function(){ msg.textContent='✅ Account created! Welcome '+name; msg.className='auth-msg ok'; setTimeout(function(){ showPage('courses'); },800); }).catch(function(err){
+    var t=err.message;
+    if(err.code==='auth/email-already-in-use') t='❌ This email already has an account. Please Login.';
+    if(err.code==='auth/weak-password') t='❌ Password too weak - use 6+ characters';
+    if(err.code==='auth/invalid-email') t='❌ Invalid email';
+    msg.textContent=t; msg.className='auth-msg bad';
+  });
+}
+function doLogin(){
+  var email=document.getElementById('li-email').value.trim().toLowerCase();
+  var pass=document.getElementById('li-pass').value;
+  var msg=document.getElementById('li-msg');
+  if(!auth){ msg.textContent='❌ Owner: Paste Firebase Config first'; msg.className='auth-msg bad'; return; }
+  if(!email||!pass){ msg.textContent='❌ Enter email and password'; msg.className='auth-msg bad'; return; }
+  msg.textContent='⏳ Logging in...'; msg.className='auth-msg';
+  auth.signInWithEmailAndPassword(email, pass).then(function(){ msg.textContent='✅ Login successful!'; msg.className='auth-msg ok'; setTimeout(function(){ showPage('courses'); },600); }).catch(function(err){ msg.textContent='❌ Wrong email or password. If no account, Sign Up first.'; msg.className='auth-msg bad'; });
+}
+function forgotPassword(){
+  var email=document.getElementById('li-email').value.trim();
+  if(!email){ alert('Type your email first, then click Forgot Password'); return; }
+  auth.sendPasswordResetEmail(email).then(function(){ alert('Password reset link sent to '+email); }).catch(function(e){ alert(e.message); });
+}
+function logoutUser(){
+  if(auth) auth.signOut().then(function(){ alert('Logged out. See you soon!'); showPage('home'); });
+  else { updateAuthUIForUser(null,null); showPage('home'); }
+}
+function shareSite(){var text="Check out Peki's Training Institute - In-class computer education with physical instructors! "+SITE_URL; if(navigator.share){navigator.share({title:"Peki's Training Institute",text:text,url:SITE_URL});} else{window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");}}
+function sendLead(){
+  var n=document.getElementById('lead-name').value; var p=document.getElementById('lead-phone').value; var c=document.getElementById('lead-course').value;
+  if(!n||!p){alert("Please enter your name and WhatsApp number");return;}
+  if(!c){alert("Please select - What would you like to study?");return;}
+  if(db && auth && auth.currentUser){ db.collection('leads').add({ name:n, phone:p, course:c, email: auth.currentUser.email, uid: auth.currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(function(){}); }
+  window.open("https://wa.me/2348085537129?text="+encodeURIComponent("Hello Peki's Training Institute, my name is "+n+". My WhatsApp is "+p+". I want to study: "+c),"_blank");
+}
+function copyKuda(){navigator.clipboard.writeText("2052204102"); alert("Kuda account number copied: 2052204102");}
+function copyOpay(){navigator.clipboard.writeText("09133717060"); alert("Opay number copied: 09133717060");}
+function payFor(service){document.getElementById('pay-title').innerHTML="You selected: <b>"+service+"</b><br>Choose how you want to pay below."; showPage('payment'); var sel=document.getElementById('card-service'); for(var i=0;i<sel.options.length;i++){if(sel.options[i].text.indexOf(service.split(' - ')[0])!==-1){sel.selectedIndex=i;}}}
+function isMastercard(num){var clean=num.replace(/\D/g,''); if(clean.length<2) return false; var f2=parseInt(clean.substring(0,2),10); var f4=parseInt(clean.substring(0,4),10); if(f2>=51&&f2<=55) return true; if(f4>=2221&&f4<=2720) return true; return false;}
+function getBankName(bin){if(bin.startsWith('5399')) return 'Kuda Bank / Mastercard'; if(bin.startsWith('5061')) return 'GTBank Mastercard'; if(bin.startsWith('5398')) return 'Access Bank Mastercard'; if(bin.startsWith('5123')) return 'First Bank Mastercard'; if(bin.startsWith('5348')) return 'UBA Mastercard'; if(bin.startsWith('5167')) return 'Zenith Bank Mastercard'; if(bin.startsWith('5392')) return 'Opay Mastercard'; if(bin.startsWith('52')||bin.startsWith('53')||bin.startsWith('54')||bin.startsWith('55')) return 'Nigerian Bank Mastercard'; return 'Mastercard Bank';}
+function formatCard(el){el.value=el.value.replace(/\D/g,'').slice(0,16).replace(/(\d{4})(?=\d)/g,'$1 '); var msg=document.getElementById('card-type-msg'); var box=document.getElementById('auto-box'); var clean=el.value.replace(/\D/g,''); if(clean.length===0){msg.textContent=''; box.style.display='none'; return;} if(clean.length<6){msg.textContent='Typing...'; msg.className='card-type'; box.style.display='none'; return;} if(clean.charAt(0)==='4'){msg.textContent='❌ This is VISA - Mastercard ONLY'; msg.className='card-type bad'; box.style.display='none'; return;} if(isMastercard(clean)){msg.textContent='✅ Mastercard Detected'; msg.className='card-type ok'; box.style.display='block'; document.getElementById('auto-bank').textContent=getBankName(clean); document.getElementById('auto-num').textContent='**** **** **** '+clean.slice(-4);} else{msg.textContent='❌ Not Mastercard'; msg.className='card-type bad'; box.style.display='none';}}
+function confirmDetails(){var name=document.getElementById('confirm-name').value.trim(); var number=document.getElementById('card-number').value; var clean=number.replace(/\D/g,''); if(clean.length!==16){alert("Enter full 16-digit Mastercard first"); return;} if(!isMastercard(number)){alert("NOT Mastercard"); return;} if(!name){alert("Type your name as on card to confirm"); return;} document.getElementById('confirm-box').style.display='block'; document.getElementById('confirm-name-show').textContent=name.toUpperCase(); document.getElementById('confirm-card-show').textContent='**** '+clean.slice(-4)+' (Mastercard)'; document.getElementById('confirm-bank-show').textContent=getBankName(clean); alert("Confirmed! "+name.toUpperCase()+" - "+getBankName(clean));}
+function payWithPaystack(){var se=document.getElementById('card-service'); var service=se.options[se.selectedIndex].text; var amount=parseInt(se.value,10)*100; var email=document.getElementById('cust-email').value.trim(); var name=document.getElementById('confirm-name').value.trim(); var number=document.getElementById('card-number').value; var clean=number.replace(/\D/g,''); if(!email||email.indexOf('@')===-1){alert("Enter your email"); return;} if(clean.length!==16||!isMastercard(number)){alert("Enter valid Mastercard"); return;} if(!name){alert("Type name and Confirm first"); return;} if(PAYSTACK_KEY.indexOf('xxxx')!==-1){alert("Owner: Add your Paystack Public Key first"); return;} var h=PaystackPop.setup({key:PAYSTACK_KEY,email:email,amount:amount,currency:'NGN',ref:'PEKI-'+Math.floor(Math.random()*1000000000),metadata:{custom_fields:[{display_name:"Customer Name",variable_name:"customer_name",value:name},{display_name:"Service",variable_name:"service",value:service}]},callback:function(r){alert("Payment Successful! Ref: "+r.reference); window.open("https://wa.me/2348085537129?text="+encodeURIComponent("Hello Peki's Training Institute, I have paid via Paystack. Service: "+service+" Name: "+name+" Ref: "+r.reference),"_blank");},onClose:function(){alert("Payment closed");}}); h.openIframe();}
+</script>
+</body>
+</html>
